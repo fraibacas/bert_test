@@ -1,0 +1,39 @@
+version: '3.3'
+
+services:
+
+  #-----------------------------------------------
+  #                 Jupyter
+  #-----------------------------------------------
+  jupyter:
+    build:
+      context: .
+    ports:
+      - "8989:8989"
+    entrypoint:
+      - /bin/bash
+      - -c
+      - "jupyter lab --no-browser --ip 0.0.0.0 --port 8989 --allow-root --NotebookApp.password='sha1:09c431c4ce8d:dc7705261a5aa68ea9d5fc81e141916168c79953'"
+    volumes:
+      - ./src:/src
+  #-----------------------------------------------
+  #                 dask
+  #-----------------------------------------------
+  dask-scheduler:
+    build:
+      context: .
+    ports:
+      - "8786:8786"
+      - "8787:8787"
+    volumes:
+      - ./src:/src
+    command: ["dask-scheduler"]
+
+  dask-worker:
+    build:
+      context: .
+    command: ["dask-worker", "--nprocs", "${DASK_WORKER_COUNT:-4}", "--nthreads", "1", "--memory-limit", "0", "tcp://dask-scheduler:8786"]
+    volumes:
+      - ./src:/src
+    depends_on:
+      - dask-scheduler
